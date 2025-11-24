@@ -1,5 +1,5 @@
 import pygame
-from sys import exit
+from sys import exitdwa
 # test
 pygame.init()
 screen = pygame.display.set_mode((800, 400))
