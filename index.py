@@ -26,7 +26,8 @@ snail_rect = snail_surf.get_rect(bottomright = (800, 300))
 
 player_surf = pygame.image.load('graphics/player/player_walk_1.png').convert_alpha()
 player_rect = player_surf.get_rect(midbottom = (80,300))
-player_gravity = -0
+player_gravity = 0
+player_stand = pygame.image.load('graphics/player/player_stand.png').convert_alpha()
 
 while True:
     for event in pygame.event.get():
@@ -68,8 +69,8 @@ while True:
             if snail_rect.colliderect(player_rect):
                 game_active = False
     else:
-            screen.fill('red')
-            snail_rect.left = 800
+            screen.fill((94,129,162))
+            # snail_rect.left = 800
 
 
     pygame.display.update()
