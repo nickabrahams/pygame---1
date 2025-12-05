@@ -2,18 +2,6 @@ import pygame
 from sys import exit
 from random import randint, choice
 
-
-def load_highscore():
-    try:
-        with open("highscore.txt", "r") as file:
-            return int(file.read().strip())
-    except:
-        return 0  # Als bestand ontbreekt of corrupt is
-
-def save_highscore(score):
-    with open("highscore.txt", "w") as file:
-        file.write(str(score))
-
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -146,6 +134,18 @@ def collision_sprite():
         return False
     else:
         return True
+
+
+def load_highscore():
+    try:
+        with open("highscore.txt", "r") as file:
+            return int(file.read().strip())
+    except:
+        return 0  # Als bestand ontbreekt of corrupt is
+
+def save_highscore(score):
+    with open("highscore.txt", "w") as file:
+        file.write(str(score))
 
 
 # Variabele voor initiële vertraging (voor reset)
