@@ -2,6 +2,18 @@ import pygame
 from sys import exit
 from random import randint, choice
 
+
+def load_highscore():
+    try:
+        with open("highscore.txt", "r") as file:
+            return int(file.read().strip())
+    except:
+        return 0  # Als bestand ontbreekt of corrupt is
+
+def save_highscore(score):
+    with open("highscore.txt", "w") as file:
+        file.write(str(score))
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -136,6 +148,7 @@ test_font = pygame.font.Font('font/Pixeltype.ttf', 50)
 game_active = False
 start_time = 0
 score = 0
+highscore = load_highscore()
 bg_music = pygame.mixer.Sound('audio/music.wav')
 bg_music.play(loops=-1)
 bg_music.set_volume(0.1)
@@ -150,7 +163,9 @@ sky_surface = pygame.image.load('graphics/sky_3.png').convert()
 ground_surface = pygame.image.load('graphics/ground_1.png').convert()
 
 # Intro screen
-player_stand = pygame.image.load('graphics/player/player_stand.png').convert_alpha()
+player_stand = pygame.image.load('new_theme/player/player_stand_c.png').convert_alpha()
+player_stand = pygame.transform.scale(player_stand, (player_stand.get_width() // 4,
+                                                   player_stand.get_height() // 4))
 player_stand = pygame.transform.rotozoom(player_stand, 0, 2)
 player_stand_rect = player_stand.get_rect(center=(400, 200))
 
@@ -173,7 +188,6 @@ while True:
         if game_active:
             if event.type == obstacle_timer:
                 obstacle_group.add(obstacle(choice(['fly', 'snail', 'snail', 'snail'])))
-
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
@@ -190,19 +204,31 @@ while True:
         obstacle_group.draw(screen)
         obstacle_group.update()
 
+        was_active = game_active
         game_active = collision_sprite()
+
+        # Als speler net doodging → highscore controleren
+        if was_active and not game_active:
+            if score > highscore:
+                highscore = score
+                save_highscore(highscore)
 
     else:
         screen.fill((94, 129, 162))
         screen.blit(player_stand, player_stand_rect)
 
-        score_message = test_font.render(f'Your score: {score}', False, (111, 196, 169))
-        score_message_rect = score_message.get_rect(center=(400, 330))
+        # Highscore tonen
+        highscore_surf = test_font.render(f'Highscore: {highscore}', False, (144, 255, 219))
+        highscore_rect = highscore_surf.get_rect(center=(400, 360))
+        screen.blit(highscore_surf, highscore_rect)
+
         screen.blit(game_name, game_name_rect)
 
         if score == 0:
             screen.blit(game_message, game_message_rect)
         else:
+            score_message = test_font.render(f'Your score: {score}', False, (111, 196, 169))
+            score_message_rect = score_message.get_rect(center=(400, 330))
             screen.blit(score_message, score_message_rect)
 
     pygame.display.update()
