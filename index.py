@@ -54,9 +54,17 @@ class Player(pygame.sprite.Sprite):
 
     def player_input(self):
         keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_UP] and self.rect.bottom >= 295:
+            self.gravity = -20
+            self.jump_sound.play()
+
         if keys[pygame.K_SPACE] and self.rect.bottom >= 295:
             self.gravity = -20
             self.jump_sound.play()
+
+        if keys[pygame.K_DOWN] and self.rect.bottom < 295:
+            self.gravity = 18
 
     def apply_gravity(self):
         self.gravity += 1
@@ -78,8 +86,9 @@ class Player(pygame.sprite.Sprite):
         self.apply_gravity()
         self.animation_state()
 
+
 class obstacle(pygame.sprite.Sprite):
-    def __init__(self,type):
+    def __init__(self, type):
         super().__init__()
 
         if type == 'fly':
@@ -104,7 +113,7 @@ class obstacle(pygame.sprite.Sprite):
 
         self.animation_index = 0
         self.image = self.frames[self.animation_index]
-        self.rect = self.image.get_rect(midbottom=(randint(900,1100), y_pos))
+        self.rect = self.image.get_rect(midbottom=(randint(900, 1100), y_pos))
 
     def animation_state(self):
         self.animation_index += 0.1
@@ -113,9 +122,9 @@ class obstacle(pygame.sprite.Sprite):
 
         self.image = self.frames[int(self.animation_index)]
 
-    def update(self):
+    def update(self, speed):
         self.animation_state()
-        self.rect.x -= 6
+        self.rect.x -= speed
         self.destroy()
 
     def destroy(self):
@@ -123,22 +132,24 @@ class obstacle(pygame.sprite.Sprite):
             self.kill()
 
 
-
 def display_score():
     current_time = int(pygame.time.get_ticks() / 1000) - start_time
-    score_surf = test_font.render(f'Score: {current_time}',False,(64, 64, 64))
-    score_rect = score_surf.get_rect(center = (400,50))
-    screen.blit(score_surf,score_rect)
+    score_surf = test_font.render(f'Score: {current_time}', False, (64, 64, 64))
+    score_rect = score_surf.get_rect(center=(400, 50))
+    screen.blit(score_surf, score_rect)
     return current_time
 
+
 def collision_sprite():
-    if pygame.sprite.spritecollide(player.sprite,obstacle_group,False):
+    if pygame.sprite.spritecollide(player.sprite, obstacle_group, False):
         obstacle_group.empty()
         return False
     else:
         return True
 
 
+# Variabele voor initiële vertraging (voor reset)
+INITIAL_SPAWN_DELAY = 1500
 
 pygame.init()
 screen = pygame.display.set_mode((800, 400))
@@ -165,7 +176,7 @@ ground_surface = pygame.image.load('graphics/ground_1.png').convert()
 # Intro screen
 player_stand = pygame.image.load('new_theme/player/player_stand_c.png').convert_alpha()
 player_stand = pygame.transform.scale(player_stand, (player_stand.get_width() // 4,
-                                                   player_stand.get_height() // 4))
+                                                     player_stand.get_height() // 4))
 player_stand = pygame.transform.rotozoom(player_stand, 0, 2)
 player_stand_rect = player_stand.get_rect(center=(400, 200))
 
@@ -177,7 +188,7 @@ game_message_rect = game_message.get_rect(center=(400, 330))
 
 # Timer
 obstacle_timer = pygame.USEREVENT + 1
-pygame.time.set_timer(obstacle_timer, 1500)
+pygame.time.set_timer(obstacle_timer, INITIAL_SPAWN_DELAY)  # Gebruik initiële vertraging
 
 while True:
     for event in pygame.event.get():
@@ -188,21 +199,45 @@ while True:
         if game_active:
             if event.type == obstacle_timer:
                 obstacle_group.add(obstacle(choice(['fly', 'snail', 'snail', 'snail'])))
+
+                # NIEUWE LOGICA: Dynamische timer aanpassen (hogere spawn rate)
+                current_time_ms = pygame.time.get_ticks()
+                time_elapsed_s = (current_time_ms / 1000) - start_time
+
+                BASE_DELAY = INITIAL_SPAWN_DELAY
+                DECREASE_RATE = 15  # ms reductie per seconde
+                MIN_DELAY = 500  # Minimale vertraging (0.5 seconde)
+
+                delay_reduction = time_elapsed_s * DECREASE_RATE
+
+                new_delay = max(MIN_DELAY, BASE_DELAY - delay_reduction)
+
+                # Stel de timer in op de nieuwe vertraging
+                pygame.time.set_timer(obstacle_timer, int(new_delay))
+
         else:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_active = True
                 start_time = int(pygame.time.get_ticks() / 1000)
+                # reset timer als het spel start
+                pygame.time.set_timer(obstacle_timer, INITIAL_SPAWN_DELAY)
 
     if game_active:
         screen.blit(sky_surface, (0, 0))
         screen.blit(ground_surface, (0, 300))
         score = display_score()
 
+        # berekening van dynamiche snelheid
+        BASE_SPEED = 6
+        SPEED_INCREASE_RATE = 0.1
+        current_obstacle_speed = BASE_SPEED + (score * SPEED_INCREASE_RATE)
+        current_obstacle_speed = max(BASE_SPEED, current_obstacle_speed)
+
         player.draw(screen)
         player.update()
 
         obstacle_group.draw(screen)
-        obstacle_group.update()
+        obstacle_group.update(current_obstacle_speed)
 
         was_active = game_active
         game_active = collision_sprite()
